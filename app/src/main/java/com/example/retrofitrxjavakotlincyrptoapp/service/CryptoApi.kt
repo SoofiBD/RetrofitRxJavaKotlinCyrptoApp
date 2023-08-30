@@ -1,6 +1,6 @@
 package com.example.retrofitrxjavakotlincyrptoapp.service
 
-import android.telecom.Call
+import retrofit2.Call
 import com.example.retrofitrxjavakotlincyrptoapp.model.CryptoModel
 import retrofit2.http.GET
 
