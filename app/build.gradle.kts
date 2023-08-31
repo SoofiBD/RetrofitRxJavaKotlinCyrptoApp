@@ -46,4 +46,5 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     implementation ("com.squareup.retrofit2:converter-gson:2.5.0")
     implementation ("com.google.code.gson:gson:2.9.0")
+    implementation ("io.reactivex.rxjava3:rxjava:3.0.0")
 }

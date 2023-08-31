@@ -8,6 +8,9 @@ import com.example.retrofitrxjavakotlincyrptoapp.R
 import com.example.retrofitrxjavakotlincyrptoapp.adapter.RecyclerViewAdapter
 import com.example.retrofitrxjavakotlincyrptoapp.model.CryptoModel
 import com.example.retrofitrxjavakotlincyrptoapp.service.CryptoApi
+import io.reactivex.rxjava3.disposables.CompositeDisposable
+import io.reactivex.rxjava3.plugins.RxJavaPlugins
+import io.reactivex.rxjava3.schedulers.Schedulers
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -16,6 +19,7 @@ class MainActivity : AppCompatActivity() , RecyclerViewAdapter.Listener {
     private val BASE_URL = "https://raw.githubusercontent.com/"
     private var cryptoModels: ArrayList<CryptoModel>? = null
     private var recyclerViewAdapter: RecyclerViewAdapter? = null
+    private var compositeDisposable: CompositeDisposable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,6 +28,7 @@ class MainActivity : AppCompatActivity() , RecyclerViewAdapter.Listener {
         val layoutManager : RecyclerView.LayoutManager= LinearLayoutManager(this)
         findViewById<RecyclerView>(R.id.recyclerView).layoutManager = layoutManager
 
+        compositeDisposable = CompositeDisposable()
         loadData()
         //2187154b7695237334aa34f7dc98a
     }
@@ -32,11 +37,16 @@ class MainActivity : AppCompatActivity() , RecyclerViewAdapter.Listener {
         val retrofit = Retrofit.Builder()
             .baseUrl(BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
-            .build()
+            addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+            .build().create(CryptoApi::class.java)
 
-        val service = retrofit.create(CryptoApi::class.java)
-        val call = service.getData()
+        compositeDisposable?.add(retrofit.getData()).subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(this::handleResponse)
+        //val service = retrofit.create(CryptoApi::class.java)
+        //val call = service.getData()
 
+/*
         call.enqueue(object : retrofit2.Callback<List<CryptoModel>> {
             override fun onResponse(
                 call: retrofit2.Call<List<CryptoModel>>?,
@@ -50,10 +60,10 @@ class MainActivity : AppCompatActivity() , RecyclerViewAdapter.Listener {
                             recyclerViewAdapter = RecyclerViewAdapter(cryptoModels!!, this@MainActivity)
                             findViewById<RecyclerView>(R.id.recyclerView).adapter = recyclerViewAdapter
 
-                            /*for (cryptoModel: CryptoModel in cryptoModels!!) {
+                            for (cryptoModel: CryptoModel in cryptoModels!!) {
                                 println(cryptoModel.currency)
                                 println(cryptoModel.price)
-                            }*/
+
                         }
                     }
                 }
@@ -63,11 +73,27 @@ class MainActivity : AppCompatActivity() , RecyclerViewAdapter.Listener {
                 t?.printStackTrace()
             }
         })
+    */
+
     }
 
     override fun onItemClick(cryptoModel: CryptoModel) {
         println(cryptoModel.currency)
         println(cryptoModel.price)
+    }
+
+    private fun handleResponse(cryptoList: List<CryptoModel>) {
+        cryptoModels = ArrayList(cryptoList)
+
+        cryptoModels?.let {
+            recyclerViewAdapter = RecyclerViewAdapter(it, this@MainActivity)
+            findViewById<RecyclerView>(R.id.recyclerView).adapter = recyclerViewAdapter
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        compositeDisposable?.clear()
     }
 
 
